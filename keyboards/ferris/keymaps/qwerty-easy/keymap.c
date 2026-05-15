@@ -21,9 +21,8 @@ user_config_t user_config;
 // Custom keycodes whose mod identity depends on OS mode
 enum custom_keycodes {
     CMD_BSPC = SAFE_RANGE,  // Command thumb: Ctrl (Win/Linux) or Cmd (Mac)
-    OSM_Z,                  // FN-layer sticky: Ctrl (Win) / Gui-Cmd (Mac)
     OSM_X,                  // FN-layer sticky: Gui-Win (Win) / Alt-Opt (Mac)
-    OSM_C,                  // FN-layer sticky: Alt (Win) / Ctrl (Mac)
+    OSM_C,                  // FN-layer sticky: Alt (Win) / Gui-Cmd (Mac)
     MAC_TOG,                // FN+M: toggle Mac/Win mode at runtime
 };
 
@@ -111,12 +110,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 
-        case OSM_Z:
-            if (record->event.pressed) {
-                add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LGUI) : MOD_BIT(KC_LCTL));
-            }
-            return false;
-
         case OSM_X:
             if (record->event.pressed) {
                 add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LALT) : MOD_BIT(KC_LGUI));
@@ -125,7 +118,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case OSM_C:
             if (record->event.pressed) {
-                add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LCTL) : MOD_BIT(KC_LALT));
+                add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LGUI) : MOD_BIT(KC_LALT));
             }
             return false;
 
@@ -182,15 +175,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //   S: Sticky Shift
     //   D: Delete
     //   G: Insert
-    //   Z: Sticky Ctrl (Win)  / Gui-Cmd (Mac)
+    //   Z: Sticky Ctrl                  (both modes)
     //   X: Sticky Gui  (Win)  / Alt-Opt (Mac)
-    //   C: Sticky Alt  (Win)  / Ctrl     (Mac)
+    //   C: Sticky Alt  (Win)  / Gui-Cmd (Mac)
+    //   Z/X/C positions mirror a real keyboard's bottom-row mod order
+    //   for the active OS (Win: Ctrl-Win-Alt; Mac: Ctrl-Opt-Cmd).
     //   H J K L: Home, PgDn, PgUp, End  (arrow-key spatial mapping)
     //   M: toggle Mac/Win mode (persists to EEPROM)
     [FN] = LAYOUT_split_3x5_2(
-        KC_F1,   KC_F2,         KC_F3,   KC_F4,   KC_F5,       KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,
-        KC_TAB,  OSM(MOD_LSFT), KC_DEL,  _______, KC_INS,      KC_HOME, KC_PGDN, KC_PGUP, KC_END,  KC_F12,
-        OSM_Z,   OSM_X,         OSM_C,   _______, _______,     _______, MAC_TOG, _______, KC_F11,  _______,
+        KC_F1,        KC_F2,         KC_F3,   KC_F4,   KC_F5,       KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,
+        KC_TAB,       OSM(MOD_LSFT), KC_DEL,  _______, KC_INS,      KC_HOME, KC_PGDN, KC_PGUP, KC_END,  KC_F12,
+        OSM(MOD_LCTL),OSM_X,         OSM_C,   _______, _______,     _______, MAC_TOG, _______, KC_F11,  _______,
 
                        _______, _______,                _______, _______
     ),
