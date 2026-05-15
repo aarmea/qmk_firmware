@@ -24,6 +24,10 @@ enum custom_keycodes {
     OSM_X,                  // FN-layer sticky: Gui-Win (Win) / Alt-Opt (Mac)
     OSM_C,                  // FN-layer sticky: Alt (Win) / Gui-Cmd (Mac)
     MAC_TOG,                // FN+M: toggle Mac/Win mode at runtime
+    WIN_PREV,               // SYM+M: prev window (Cmd+Shift+Tab / Alt+Shift+Tab)
+    WIN_NEXT,               // SYM+,: next window (Cmd+Tab / Alt+Tab)
+    DSK_PREV,               // SYM+N: prev desktop (Ctrl+Left / Ctrl+Win+Left)
+    DSK_NEXT,               // SYM+.: next desktop (Ctrl+Right / Ctrl+Win+Right)
 };
 
 // ────────────────────────────────────────────────────────────────
@@ -128,6 +132,29 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));
             }
             return false;
+
+        case WIN_NEXT:
+        case WIN_PREV:
+            if (record->event.pressed) {
+                uint16_t base = user_config.mac_mode ? KC_LGUI : KC_LALT;
+                register_code(base);
+                if (keycode == WIN_PREV) register_code(KC_LSFT);
+                tap_code(KC_TAB);
+                if (keycode == WIN_PREV) unregister_code(KC_LSFT);
+                unregister_code(base);
+            }
+            return false;
+
+        case DSK_NEXT:
+        case DSK_PREV:
+            if (record->event.pressed) {
+                register_code(KC_LCTL);
+                if (!user_config.mac_mode) register_code(KC_LGUI);
+                tap_code(keycode == DSK_NEXT ? KC_RGHT : KC_LEFT);
+                if (!user_config.mac_mode) unregister_code(KC_LGUI);
+                unregister_code(KC_LCTL);
+            }
+            return false;
     }
     return true;
 }
@@ -159,11 +186,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //   Home  A→G:    - = [ ] backslash
     //   Home  H→L:    ← ↓ ↑ →  (Vim arrows)
     //   Home  ;:      '
+    //   Bottom N M , .: window/desktop nav (outer = desktops, inner = windows)
+    //     N: prev desktop  M: prev window  ,: next window  .: next desktop
     //   Hold Triangle simultaneously for shifted variants
     [SYM] = LAYOUT_split_3x5_2(
-        KC_1,    KC_2,    KC_3,    KC_4,    KC_5,         KC_6,    KC_7,    KC_8,  KC_9,    KC_0,
-        KC_MINS, KC_EQL,  KC_LBRC, KC_RBRC, KC_BSLS,      KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_QUOT,
-        _______, _______, _______, _______, _______,      _______, _______, _______, _______, _______,
+        KC_1,    KC_2,    KC_3,    KC_4,    KC_5,         KC_6,     KC_7,     KC_8,     KC_9,     KC_0,
+        KC_MINS, KC_EQL,  KC_LBRC, KC_RBRC, KC_BSLS,      KC_LEFT,  KC_DOWN,  KC_UP,    KC_RGHT,  KC_QUOT,
+        _______, _______, _______, _______, _______,      DSK_PREV, WIN_PREV, WIN_NEXT, DSK_NEXT, _______,
 
                        _______, _______,                _______, _______
     ),
