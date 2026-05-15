@@ -1,0 +1,173 @@
+#include QMK_KEYBOARD_H
+
+enum layers {
+    BASE,
+    SYM,
+    FN,
+};
+
+// ────────────────────────────────────────────────────────────────
+// OS mode: stored in EEPROM, toggled by holding Command on boot
+// ────────────────────────────────────────────────────────────────
+typedef union {
+    uint8_t raw;
+    struct {
+        bool mac_mode : 1;
+    };
+} user_config_t;
+
+user_config_t user_config;
+
+// Custom keycodes whose mod identity depends on OS mode
+enum custom_keycodes {
+    CMD_BSPC = SAFE_RANGE,  // Command thumb: Ctrl (Win/Linux) or Cmd (Mac)
+    OSM_Z,                  // FN-layer sticky: Ctrl (Win) / Gui-Cmd (Mac)
+    OSM_X,                  // FN-layer sticky: Gui-Win (Win) / Alt-Opt (Mac)
+    OSM_C,                  // FN-layer sticky: Alt (Win) / Ctrl (Mac)
+};
+
+// ────────────────────────────────────────────────────────────────
+// Boot-time mode toggle: hold Command (left thumb outer) at power-on
+// ────────────────────────────────────────────────────────────────
+void keyboard_post_init_user(void) {
+    eeconfig_read_user_datablock(&user_config, 0, sizeof(user_config));
+
+    // Scan matrix to check whether Command is pressed at boot.
+    // Adjust (row, col) if your Sweep variant places the left thumb
+    // outer key elsewhere — check info.json for your board.
+    matrix_scan();
+    wait_ms(30);
+    matrix_scan();
+
+    if (matrix_is_on(4, 0)) {
+        user_config.mac_mode = !user_config.mac_mode;
+        eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));
+    }
+}
+
+void eeconfig_init_user_datablock(void) {
+    user_config.raw = 0;
+    user_config.mac_mode = false;
+    eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));
+}
+
+// ────────────────────────────────────────────────────────────────
+// Manual mod-tap for Command, plus OS-aware sticky mods on FN layer.
+//
+// Why manual: standard LCTL_T can't change its mod identity at runtime.
+// We track Command state and register the right mod when another key
+// is pressed during the hold.
+// ────────────────────────────────────────────────────────────────
+static bool     cmd_pressed   = false;
+static uint16_t cmd_timer     = 0;
+static bool     cmd_mod_active = false;
+
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    uint16_t cmd_mod = user_config.mac_mode ? KC_LGUI : KC_LCTL;
+
+    // If any non-Command key is pressed while Command is held,
+    // promote Command to its modifier role.
+    if (cmd_pressed && !cmd_mod_active && keycode != CMD_BSPC && record->event.pressed) {
+        register_code(cmd_mod);
+        cmd_mod_active = true;
+    }
+
+    switch (keycode) {
+        case CMD_BSPC:
+            if (record->event.pressed) {
+                cmd_pressed = true;
+                cmd_timer = timer_read();
+                cmd_mod_active = false;
+            } else {
+                cmd_pressed = false;
+                if (cmd_mod_active) {
+                    unregister_code(cmd_mod);
+                    cmd_mod_active = false;
+                } else if (timer_elapsed(cmd_timer) < TAPPING_TERM) {
+                    // Short press, no other key → backspace
+                    tap_code(KC_BSPC);
+                } else {
+                    // Held alone past TAPPING_TERM → emit one backspace.
+                    // (QMK's auto-repeat handles continued holds via
+                    //  QUICK_TAP_TERM tap-then-hold behavior — see config.h)
+                    tap_code(KC_BSPC);
+                }
+            }
+            return false;
+
+        case OSM_Z:
+            if (record->event.pressed) {
+                add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LGUI) : MOD_BIT(KC_LCTL));
+            }
+            return false;
+
+        case OSM_X:
+            if (record->event.pressed) {
+                add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LALT) : MOD_BIT(KC_LGUI));
+            }
+            return false;
+
+        case OSM_C:
+            if (record->event.pressed) {
+                add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LCTL) : MOD_BIT(KC_LALT));
+            }
+            return false;
+    }
+    return true;
+}
+
+// ────────────────────────────────────────────────────────────────
+// Layout
+//
+// Thumbs (L→R):
+//   Command (outer L) | Triangle (inner L) | Return (inner R) | Escape (outer R)
+//
+//   Command  tap=BSPC,  hold=Ctrl/Cmd (OS-aware), hold-alone=repeat BSPC
+//   Triangle tap=SPC,   hold-with-other=Shift
+//   Return   tap=ENT,   hold=SYM layer
+//   Escape   tap=ESC,   hold=FN  layer
+// ────────────────────────────────────────────────────────────────
+const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
+
+    // BASE — pure QWERTY
+    [BASE] = LAYOUT_split_3x5_2(
+        KC_Q, KC_W, KC_E, KC_R, KC_T,                     KC_Y, KC_U, KC_I,    KC_O,   KC_P,
+        KC_A, KC_S, KC_D, KC_F, KC_G,                     KC_H, KC_J, KC_K,    KC_L,   KC_SCLN,
+        KC_Z, KC_X, KC_C, KC_V, KC_B,                     KC_N, KC_M, KC_COMM, KC_DOT, KC_SLSH,
+
+              CMD_BSPC, LSFT_T(KC_SPC),         LT(SYM, KC_ENT), LT(FN, KC_ESC)
+    ),
+
+    // SYM — held via Return
+    //   Top row Q→P:  1 2 3 4 5 / 6 7 8 9 0
+    //   Home  A→G:    - = [ ] backslash
+    //   Home  H→L:    ← ↓ ↑ →  (Vim arrows)
+    //   Home  ;:      '
+    //   Hold Triangle simultaneously for shifted variants
+    [SYM] = LAYOUT_split_3x5_2(
+        KC_1,    KC_2,    KC_3,    KC_4,    KC_5,         KC_6,    KC_7,    KC_8,  KC_9,    KC_0,
+        KC_MINS, KC_EQL,  KC_LBRC, KC_RBRC, KC_BSLS,      KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_QUOT,
+        _______, _______, _______, _______, _______,      _______, _______, _______, _______, _______,
+
+                       _______, _______,                _______, _______
+    ),
+
+    // FN — held via Escape
+    //   Top row Q→P:   F1–F10
+    //   L: F11, ;: F12
+    //   A: Tab
+    //   S: Sticky Shift
+    //   D: Delete
+    //   G: Insert
+    //   Z: Sticky Ctrl (Win)  / Gui-Cmd (Mac)
+    //   X: Sticky Gui  (Win)  / Alt-Opt (Mac)
+    //   C: Sticky Alt  (Win)  / Ctrl     (Mac)
+    //   H J K L: Home, PgDn, PgUp, End  (arrow-key spatial mapping)
+    [FN] = LAYOUT_split_3x5_2(
+        KC_F1,   KC_F2,         KC_F3,   KC_F4,   KC_F5,       KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,
+        KC_TAB,  OSM(MOD_LSFT), KC_DEL,  _______, KC_INS,      KC_HOME, KC_PGDN, KC_PGUP, KC_END,  KC_F12,
+        OSM_Z,   OSM_X,         OSM_C,   _______, _______,     _______, _______, _______, KC_F11,  _______,
+
+                       _______, _______,                _______, _______
+    ),
+};
