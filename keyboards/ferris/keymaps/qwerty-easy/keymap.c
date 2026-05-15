@@ -24,6 +24,7 @@ enum custom_keycodes {
     OSM_Z,                  // FN-layer sticky: Ctrl (Win) / Gui-Cmd (Mac)
     OSM_X,                  // FN-layer sticky: Gui-Win (Win) / Alt-Opt (Mac)
     OSM_C,                  // FN-layer sticky: Alt (Win) / Ctrl (Mac)
+    MAC_TOG,                // FN+M: toggle Mac/Win mode at runtime
 };
 
 // ────────────────────────────────────────────────────────────────
@@ -127,6 +128,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LCTL) : MOD_BIT(KC_LALT));
             }
             return false;
+
+        case MAC_TOG:
+            if (record->event.pressed) {
+                user_config.mac_mode = !user_config.mac_mode;
+                eeconfig_update_user_datablock(&user_config, 0, sizeof(user_config));
+            }
+            return false;
     }
     return true;
 }
@@ -178,10 +186,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //   X: Sticky Gui  (Win)  / Alt-Opt (Mac)
     //   C: Sticky Alt  (Win)  / Ctrl     (Mac)
     //   H J K L: Home, PgDn, PgUp, End  (arrow-key spatial mapping)
+    //   M: toggle Mac/Win mode (persists to EEPROM)
     [FN] = LAYOUT_split_3x5_2(
         KC_F1,   KC_F2,         KC_F3,   KC_F4,   KC_F5,       KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,
         KC_TAB,  OSM(MOD_LSFT), KC_DEL,  _______, KC_INS,      KC_HOME, KC_PGDN, KC_PGUP, KC_END,  KC_F12,
-        OSM_Z,   OSM_X,         OSM_C,   _______, _______,     _______, _______, _______, KC_F11,  _______,
+        OSM_Z,   OSM_X,         OSM_C,   _______, _______,     _______, MAC_TOG, _______, KC_F11,  _______,
 
                        _______, _______,                _______, _______
     ),
