@@ -189,11 +189,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //   Bottom Z X C V B: media — prev, play/pause, next, vol-, vol+
     //   Bottom N M , .: window/desktop nav (outer = desktops, inner = windows)
     //     N: prev desktop  M: prev window  ,: next window  .: next desktop
+    //   Bottom /: `
     //   Hold Triangle simultaneously for shifted variants
     [SYM] = LAYOUT_split_3x5_2(
         KC_1,    KC_2,    KC_3,    KC_4,    KC_5,         KC_6,     KC_7,     KC_8,     KC_9,     KC_0,
         KC_MINS, KC_EQL,  KC_LBRC, KC_RBRC, KC_BSLS,      KC_LEFT,  KC_DOWN,  KC_UP,    KC_RGHT,  KC_QUOT,
-        KC_MPRV, KC_MPLY, KC_MNXT, KC_VOLD, KC_VOLU,      DSK_PREV, WIN_PREV, WIN_NEXT, DSK_NEXT, _______,
+        KC_MPRV, KC_MPLY, KC_MNXT, KC_VOLD, KC_VOLU,      DSK_PREV, WIN_PREV, WIN_NEXT, DSK_NEXT, KC_GRAVE,
 
                        _______, _______,                _______, _______
     ),
