@@ -58,16 +58,20 @@ void eeconfig_init_user_datablock(void) {
 // We track Command state and register the right mod when another key
 // is pressed during the hold.
 // ────────────────────────────────────────────────────────────────
-static bool     cmd_pressed   = false;
-static uint16_t cmd_timer     = 0;
-static bool     cmd_mod_active = false;
+static bool     cmd_pressed      = false;
+static uint16_t cmd_timer        = 0;
+static bool     cmd_mod_active   = false;
+static uint16_t cmd_last_tap     = 0;
+static bool     cmd_had_tap      = false;
+static bool     cmd_quick_hold   = false;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     uint16_t cmd_mod = user_config.mac_mode ? KC_LGUI : KC_LCTL;
 
     // If any non-Command key is pressed while Command is held,
-    // promote Command to its modifier role.
-    if (cmd_pressed && !cmd_mod_active && keycode != CMD_BSPC && record->event.pressed) {
+    // promote Command to its modifier role. Skipped while in
+    // quick-tap-hold (we're holding KC_BSPC for OS auto-repeat).
+    if (cmd_pressed && !cmd_mod_active && !cmd_quick_hold && keycode != CMD_BSPC && record->event.pressed) {
         register_code(cmd_mod);
         cmd_mod_active = true;
     }
@@ -75,22 +79,33 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case CMD_BSPC:
             if (record->event.pressed) {
+                // Quick-tap-then-hold: if this press follows a pure tap
+                // within QUICK_TAP_TERM, register KC_BSPC and let the OS
+                // auto-repeat drive the repeated backspaces until release.
+                if (cmd_had_tap && timer_elapsed(cmd_last_tap) < QUICK_TAP_TERM) {
+                    register_code(KC_BSPC);
+                    cmd_quick_hold = true;
+                }
                 cmd_pressed = true;
                 cmd_timer = timer_read();
                 cmd_mod_active = false;
             } else {
                 cmd_pressed = false;
-                if (cmd_mod_active) {
+                if (cmd_quick_hold) {
+                    unregister_code(KC_BSPC);
+                    cmd_quick_hold = false;
+                    cmd_had_tap = false;
+                } else if (cmd_mod_active) {
                     unregister_code(cmd_mod);
                     cmd_mod_active = false;
-                } else if (timer_elapsed(cmd_timer) < TAPPING_TERM) {
-                    // Short press, no other key → backspace
-                    tap_code(KC_BSPC);
+                    cmd_had_tap = false;
                 } else {
-                    // Held alone past TAPPING_TERM → emit one backspace.
-                    // (QMK's auto-repeat handles continued holds via
-                    //  QUICK_TAP_TERM tap-then-hold behavior — see config.h)
+                    // No other key was pressed during the hold → backspace tap.
+                    // Record so a quick re-press within QUICK_TAP_TERM
+                    // becomes a held repeat.
                     tap_code(KC_BSPC);
+                    cmd_last_tap = timer_read();
+                    cmd_had_tap = true;
                 }
             }
             return false;
