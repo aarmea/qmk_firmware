@@ -88,13 +88,13 @@ Hold the Space thumb (Triangle) at the same time for shifted variants of any of 
 ┌────┬────┬────┬────┬────┐                ┌────┬────┬────┬────┬────┐
 │F1  │F2  │F3  │F4  │F5  │                │F6  │F7  │F8  │F9  │F10 │
 ├────┼────┼────┼────┼────┤                ├────┼────┼────┼────┼────┤
-│Tab │⇧ os│Del │    │Ins │                │Home│PgDn│PgUp│End │F12 │
+│Tab │⇧ os│Del │    │Ins │                │Home│PgDn│PgUp│End │F11 │
 ├────┼────┼────┼────┼────┤                ├────┼────┼────┼────┼────┤
-│⌃ os│ X* │ C* │    │    │                │    │M⇄  │    │F11 │    │
+│⌃ os│ X* │ C* │    │    │                │    │M⇄  │    │    │F12 │
 └────┴────┴────┴────┴────┘                └────┴────┴────┴────┴────┘
 ```
 
-- **Top row:** F1–F10. F11 sits on `L`, F12 on `;`.
+- **Top row:** F1–F10. F11 sits on `;`, F12 on `/`.
 - **`A`:** Tab.
 - **`S`:** Sticky (one-shot) Shift.
 - **`D`:** Delete.

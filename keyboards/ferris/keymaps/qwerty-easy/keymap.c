@@ -201,7 +201,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // FN — held via Escape
     //   Top row Q→P:   F1–F10
-    //   L: F11, ;: F12
+    //   ;: F11, /: F12
     //   A: Tab
     //   S: Sticky Shift
     //   D: Delete
@@ -215,8 +215,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //   M: toggle Mac/Win mode (persists to EEPROM)
     [FN] = LAYOUT_split_3x5_2(
         KC_F1,        KC_F2,         KC_F3,   KC_F4,   KC_F5,       KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,
-        KC_TAB,       OSM(MOD_LSFT), KC_DEL,  _______, KC_INS,      KC_HOME, KC_PGDN, KC_PGUP, KC_END,  KC_F12,
-        OSM(MOD_LCTL),OSM_X,         OSM_C,   _______, _______,     _______, MAC_TOG, _______, KC_F11,  _______,
+        KC_TAB,       OSM(MOD_LSFT), KC_DEL,  _______, KC_INS,      KC_HOME, KC_PGDN, KC_PGUP, KC_END,  KC_F11,
+        OSM(MOD_LCTL),OSM_X,         OSM_C,   _______, _______,     _______, MAC_TOG, _______, _______, KC_F12,
 
                        _______, _______,                _______, _______
     ),
