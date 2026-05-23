@@ -18,9 +18,13 @@ typedef union {
 
 user_config_t user_config;
 
-// Custom keycodes whose mod identity depends on OS mode
+// Custom keycodes. Sticky mods (OSM_*) arm a one-shot on tap; tapping
+// the same one again while still armed clears it and emits the mod
+// by itself (e.g., Win-key Start menu on Windows).
 enum custom_keycodes {
     CMD_BSPC = SAFE_RANGE,  // Command thumb: Ctrl (Win/Linux) or Cmd (Mac)
+    OSM_Z,                  // FN-layer sticky: Ctrl (both modes)
+    OSM_S,                  // FN-layer sticky: Shift (both modes)
     OSM_X,                  // FN-layer sticky: Gui-Win (Win) / Alt-Opt (Mac)
     OSM_C,                  // FN-layer sticky: Alt (Win) / Gui-Cmd (Mac)
     MAC_TOG,                // FN+M: toggle Mac/Win mode at runtime
@@ -30,6 +34,8 @@ enum custom_keycodes {
     DSK_NEXT,               // SYM+.: next desktop (Ctrl+Right / Ctrl+Win+Right)
     SCRN_LCK,               // FN+N: lock screen (Ctrl+Cmd+Q / Win+L)
 };
+
+#define OSM_DOUBLE_TAP_MS 300
 
 // ────────────────────────────────────────────────────────────────
 // Boot-time mode toggle: hold Command (left thumb outer) at power-on
@@ -69,6 +75,9 @@ static bool     cmd_mod_active   = false;
 static uint16_t cmd_last_tap     = 0;
 static bool     cmd_had_tap      = false;
 static bool     cmd_quick_hold   = false;
+
+static uint16_t osm_last_keycode = 0;
+static uint16_t osm_last_time    = 0;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     uint16_t cmd_mod = user_config.mac_mode ? KC_LGUI : KC_LCTL;
@@ -115,17 +124,33 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 
+        case OSM_Z:
+        case OSM_S:
         case OSM_X:
-            if (record->event.pressed) {
-                add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LALT) : MOD_BIT(KC_LGUI));
+        case OSM_C: {
+            if (!record->event.pressed) return false;
+            uint16_t mod;
+            switch (keycode) {
+                case OSM_Z: mod = KC_LCTL; break;
+                case OSM_S: mod = KC_LSFT; break;
+                case OSM_X: mod = user_config.mac_mode ? KC_LALT : KC_LGUI; break;
+                case OSM_C: mod = user_config.mac_mode ? KC_LGUI : KC_LALT; break;
+                default:    return false;
+            }
+            if (osm_last_keycode == keycode
+                && timer_elapsed(osm_last_time) < OSM_DOUBLE_TAP_MS
+                && (get_oneshot_mods() & MOD_BIT(mod))) {
+                // Double-tap while still armed → emit mod by itself.
+                clear_oneshot_mods();
+                tap_code(mod);
+                osm_last_keycode = 0;
+            } else {
+                add_oneshot_mods(MOD_BIT(mod));
+                osm_last_keycode = keycode;
+                osm_last_time = timer_read();
             }
             return false;
-
-        case OSM_C:
-            if (record->event.pressed) {
-                add_oneshot_mods(user_config.mac_mode ? MOD_BIT(KC_LGUI) : MOD_BIT(KC_LALT));
-            }
-            return false;
+        }
 
         case MAC_TOG:
             if (record->event.pressed) {
@@ -232,9 +257,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //   N: lock screen (Ctrl+Cmd+Q on Mac, Win+L on Windows)
     //   M: toggle Mac/Win mode (persists to EEPROM)
     [FN] = LAYOUT_split_3x5_2(
-        KC_F1,        KC_F2,         KC_F3,   KC_F4,   KC_F5,       KC_F6,    KC_F7,   KC_F8,   KC_F9,   KC_F10,
-        KC_TAB,       OSM(MOD_LSFT), KC_DEL,  _______, KC_INS,      KC_HOME,  KC_PGDN, KC_PGUP, KC_END,  KC_F11,
-        OSM(MOD_LCTL),OSM_X,         OSM_C,   _______, _______,     SCRN_LCK, MAC_TOG, _______, _______, KC_F12,
+        KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,       KC_F6,    KC_F7,   KC_F8,   KC_F9,   KC_F10,
+        KC_TAB,  OSM_S,   KC_DEL,  _______, KC_INS,      KC_HOME,  KC_PGDN, KC_PGUP, KC_END,  KC_F11,
+        OSM_Z,   OSM_X,   OSM_C,   _______, _______,     SCRN_LCK, MAC_TOG, _______, _______, KC_F12,
 
                        _______, _______,                _______, _______
     ),

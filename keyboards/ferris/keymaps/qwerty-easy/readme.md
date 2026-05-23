@@ -102,6 +102,7 @@ Hold the Space thumb (Triangle) at the same time for shifted variants of any of 
 - **`Z` / `X` / `C`:** sticky modifiers, arranged left-to-right to match the bottom-row mod order of a real keyboard for the active OS:
   - **Windows mode:** Ctrl · Win · Alt
   - **Mac mode:** Ctrl · Option · Cmd
+  - Double-tap any of these modifiers to send it by itself.
 - **`H` `J` `K` `L`:** Home, PgDn, PgUp, End (a spatial mirror of the SYM-layer arrow keys).
 - **`N`:** lock screen — `Ctrl+Cmd+Q` on Mac, `Win+L` on Windows.
 - **`M`:** toggle Mac/Win mode and persist to EEPROM.
