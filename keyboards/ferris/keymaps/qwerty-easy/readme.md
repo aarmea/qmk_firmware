@@ -90,7 +90,7 @@ Hold the Space thumb (Triangle) at the same time for shifted variants of any of 
 ├────┼────┼────┼────┼────┤                ├────┼────┼────┼────┼────┤
 │Tab │⇧ os│Del │    │Ins │                │Home│PgDn│PgUp│End │F11 │
 ├────┼────┼────┼────┼────┤                ├────┼────┼────┼────┼────┤
-│⌃ os│ X* │ C* │    │    │                │    │M⇄  │    │    │F12 │
+│⌃ os│ X* │ C* │    │    │                │Lock│M⇄  │    │    │F12 │
 └────┴────┴────┴────┴────┘                └────┴────┴────┴────┴────┘
 ```
 
@@ -103,6 +103,7 @@ Hold the Space thumb (Triangle) at the same time for shifted variants of any of 
   - **Windows mode:** Ctrl · Win · Alt
   - **Mac mode:** Ctrl · Option · Cmd
 - **`H` `J` `K` `L`:** Home, PgDn, PgUp, End (a spatial mirror of the SYM-layer arrow keys).
+- **`N`:** lock screen — `Ctrl+Cmd+Q` on Mac, `Win+L` on Windows.
 - **`M`:** toggle Mac/Win mode and persist to EEPROM.
 
 

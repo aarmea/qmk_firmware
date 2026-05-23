@@ -28,6 +28,7 @@ enum custom_keycodes {
     WIN_NEXT,               // SYM+,: next window (Cmd+Tab / Alt+Tab)
     DSK_PREV,               // SYM+N: prev desktop (Ctrl+Left / Ctrl+Win+Left)
     DSK_NEXT,               // SYM+.: next desktop (Ctrl+Right / Ctrl+Win+Right)
+    SCRN_LCK,               // FN+N: lock screen (Ctrl+Cmd+Q / Win+L)
 };
 
 // ────────────────────────────────────────────────────────────────
@@ -155,6 +156,22 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 unregister_code(KC_LCTL);
             }
             return false;
+
+        case SCRN_LCK:
+            if (record->event.pressed) {
+                if (user_config.mac_mode) {
+                    register_code(KC_LCTL);
+                    register_code(KC_LGUI);
+                    tap_code(KC_Q);
+                    unregister_code(KC_LGUI);
+                    unregister_code(KC_LCTL);
+                } else {
+                    register_code(KC_LGUI);
+                    tap_code(KC_L);
+                    unregister_code(KC_LGUI);
+                }
+            }
+            return false;
     }
     return true;
 }
@@ -212,11 +229,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //   Z/X/C positions mirror a real keyboard's bottom-row mod order
     //   for the active OS (Win: Ctrl-Win-Alt; Mac: Ctrl-Opt-Cmd).
     //   H J K L: Home, PgDn, PgUp, End  (arrow-key spatial mapping)
+    //   N: lock screen (Ctrl+Cmd+Q on Mac, Win+L on Windows)
     //   M: toggle Mac/Win mode (persists to EEPROM)
     [FN] = LAYOUT_split_3x5_2(
-        KC_F1,        KC_F2,         KC_F3,   KC_F4,   KC_F5,       KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,
-        KC_TAB,       OSM(MOD_LSFT), KC_DEL,  _______, KC_INS,      KC_HOME, KC_PGDN, KC_PGUP, KC_END,  KC_F11,
-        OSM(MOD_LCTL),OSM_X,         OSM_C,   _______, _______,     _______, MAC_TOG, _______, _______, KC_F12,
+        KC_F1,        KC_F2,         KC_F3,   KC_F4,   KC_F5,       KC_F6,    KC_F7,   KC_F8,   KC_F9,   KC_F10,
+        KC_TAB,       OSM(MOD_LSFT), KC_DEL,  _______, KC_INS,      KC_HOME,  KC_PGDN, KC_PGUP, KC_END,  KC_F11,
+        OSM(MOD_LCTL),OSM_X,         OSM_C,   _______, _______,     SCRN_LCK, MAC_TOG, _______, _______, KC_F12,
 
                        _______, _______,                _______, _______
     ),
